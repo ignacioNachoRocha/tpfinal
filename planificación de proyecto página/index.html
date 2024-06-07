@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistema de Turnos Dr. Amado</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/fullcalendar@5.9.0/main.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #ccc;
+      }
+      header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .calendar-container {
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      #calendar {
+        width: 800px;
+      }
+      #message {
+        font-weight: bold;
+        color: green;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .time-selector {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .time-selector button {
+        margin: 5px;
+        padding: 10px 15px;
+        background-color: #76c7c0;
+        border: none;
+        border-radius: 5px;
+        color: white;
+        cursor: pointer;
+      }
+      .time-selector button:hover {
+        background-color: #5ba9a8;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Sistema de Turnos Dr. Amado</h1>
+      <p>Bienvenido al sistema de consulta del Dr. Amado</p>
+    </header>
+
+    <div class="calendar-container">
+      <div id="calendar"></div>
+    </div>
+
+    <div id="message"></div>
+    <div class="time-selector"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.9.0/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.9.0/locales/es.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var calendarEl = document.getElementById("calendar");
+        var messageEl = document.getElementById("message");
+        var timeSelectorEl = document.querySelector(".time-selector");
+
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+          locale: "es",
+          initialView: "dayGridMonth",
+          selectable: true,
+          dateClick: function (info) {
+            var dateStr = info.dateStr;
+            var times = ["09:00:00", "10:00:00", "11:00:00"];
+            timeSelectorEl.innerHTML = "<p>Seleccione un turno:</p>";
+            times.forEach(function (time) {
+              var timeButton = document.createElement("button");
+              timeButton.textContent = time;
+              timeButton.addEventListener("click", function () {
+                var confirmation = confirm(
+                  `¿Confirma el turno para el día ${dateStr} a las ${time}?`
+                );
+                if (confirmation) {
+                  var xhr = new XMLHttpRequest();
+                  xhr.onreadystatechange = function () {
+                    if (this.readyState == 4 && this.status == 200) {
+                      var response = JSON.parse(this.responseText);
+                      if (response.status == "error") {
+                        alert(response.message);
+                        messageEl.textContent = response.message;
+                      } else {
+                        messageEl.textContent = `Turno reservado para el día ${dateStr} a las ${time}.`;
+                      }
+                    }
+                  };
+                  xhr.open("POST", "http://localhost:3003/guardar_turno", true);
+                  xhr.setRequestHeader(
+                    "Content-Type",
+                    "application/x-www-form-urlencoded"
+                  );
+                  xhr.send("fecha=" + dateStr + "&hora=" + time);
+                } else {
+                  alert = "Turno cancelado.";
+                }
+                timeSelectorEl.innerHTML = "";
+              });
+              timeSelectorEl.appendChild(timeButton);
+            });
+          },
+        });
+
+        calendar.render();
+      });
+    </script>
+  </body>
+</html>
